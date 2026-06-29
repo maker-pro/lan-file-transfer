@@ -1,0 +1,50 @@
+# Runtime uploads and user files
+/uploads/
+/test-uploads/
+
+# Built binaries
+/bin/
+/dist/
+/build/
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+/*.app
+/*.out
+
+# Archives and packaged releases created locally
+/*.zip
+/*.rar
+/*.7z
+/*.tar
+/*.tar.gz
+/*.tgz
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.code-workspace
+
+# Go test/build cache artifacts
+coverage.out
+*.test

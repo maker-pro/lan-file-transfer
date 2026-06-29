@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lan File Transfer</title>
+  <link rel="stylesheet" href="/static/web/styles.css">
+  <script>
+    window.LAN_DROP_INFO = {
+      port: {{ .Port }},
+      addresses: [
+        {{- range $index, $addr := .Addresses -}}
+        {{ if $index }},{{ end }}"{{ $addr }}"
+        {{- end -}}
+      ]
+    };
+  </script>
+  <script src="/static/web/app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <section class="topbar">
+      <div>
+        <p class="eyebrow">LAN FILE TRANSFER</p>
+        <h1>局域网文件互传</h1>
+      </div>
+      <div class="status-pill" id="statusPill">已连接</div>
+    </section>
+
+    <section class="hero">
+      <div class="qr-panel">
+        <img id="qrImage" alt="访问二维码">
+      </div>
+      <div class="address-panel">
+        <h2>扫码打开</h2>
+        <p id="currentAddress" class="address-text"></p>
+        <div id="addressList" class="address-list"></div>
+      </div>
+    </section>
+
+    <section class="upload-zone" id="dropZone">
+      <div class="upload-copy">
+        <h2>上传文件</h2>
+        <p>支持图片、视频、压缩包、Office、PDF 和普通大文件。</p>
+      </div>
+      <div class="upload-actions">
+        <label class="button primary">
+          选择文件
+          <input id="fileInput" type="file" multiple>
+        </label>
+        <label class="button">
+          选择文件夹
+          <input id="folderInput" type="file" webkitdirectory multiple>
+        </label>
+      </div>
+      <div class="progress-wrap" aria-live="polite">
+        <div class="progress-line">
+          <span id="progressText">等待上传</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div id="progressBar" class="progress-fill"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="files-section">
+      <div class="section-head">
+        <div>
+          <h2>文件列表</h2>
+          <p id="fileCount">正在读取 uploads 目录</p>
+        </div>
+        <button class="button small" id="refreshButton" type="button">刷新</button>
+      </div>
+      <div id="fileList" class="file-list"></div>
+      <div id="emptyState" class="empty-state" hidden>uploads 目录还是空的</div>
+    </section>
+  </main>
+</body>
+</html>
