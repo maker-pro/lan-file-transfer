@@ -74,6 +74,7 @@ func main() {
 	mux.HandleFunc("/upload", uploadHandler)
 	mux.HandleFunc("/files", filesHandler)
 	mux.HandleFunc("/download", downloadHandler)
+	mux.HandleFunc("/preview", previewHandler)
 	mux.HandleFunc("/delete", deleteHandler)
 	mux.HandleFunc("/qr", qrHandler)
 
@@ -448,6 +449,50 @@ func downloadHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, name, info.ModTime(), file)
 }
 
+func previewHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	target, _, err := requestPath(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	info, err := os.Stat(target)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "stat failed", http.StatusInternalServerError)
+		return
+	}
+	if info.IsDir() {
+		http.Error(w, "folders cannot be previewed", http.StatusBadRequest)
+		return
+	}
+
+	name := filepath.Base(target)
+	if ctype := mime.TypeByExtension(filepath.Ext(name)); ctype != "" {
+		w.Header().Set("Content-Type", ctype)
+	}
+	w.Header().Set("Content-Disposition", inlineContentDisposition(name))
+
+	file, err := os.Open(target)
+	if err != nil {
+		http.Error(w, "open failed", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	// 预览也使用 ServeContent，支持视频拖动和大文件 Range 请求。
+	http.ServeContent(w, r, name, info.ModTime(), file)
+}
+
 func downloadZip(w http.ResponseWriter, r *http.Request, dir string, rel string) {
 	zipName := filepath.Base(dir)
 	if zipName == "." || zipName == string(filepath.Separator) {
@@ -605,6 +650,11 @@ func secureJoin(rel string) (string, error) {
 func contentDisposition(filename string) string {
 	escaped := url.PathEscape(filename)
 	return fmt.Sprintf("attachment; filename=%q; filename*=UTF-8''%s", sanitizeASCIIName(filename), escaped)
+}
+
+func inlineContentDisposition(filename string) string {
+	escaped := url.PathEscape(filename)
+	return fmt.Sprintf("inline; filename=%q; filename*=UTF-8''%s", sanitizeASCIIName(filename), escaped)
 }
 
 func sanitizeASCIIName(name string) string {

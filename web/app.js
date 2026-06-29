@@ -18,7 +18,19 @@
     fileCount: document.getElementById("fileCount"),
     emptyState: document.getElementById("emptyState"),
     refreshButton: document.getElementById("refreshButton"),
-    statusPill: document.getElementById("statusPill")
+    statusPill: document.getElementById("statusPill"),
+    previewModal: document.getElementById("previewModal"),
+    previewTitle: document.getElementById("previewTitle"),
+    previewBody: document.getElementById("previewBody"),
+    previewOpen: document.getElementById("previewOpen")
+  };
+
+  const previewTypes = {
+    image: new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico", "avif"]),
+    video: new Set(["mp4", "webm", "ogg", "ogv", "mov", "m4v"]),
+    audio: new Set(["mp3", "wav", "ogg", "oga", "m4a", "flac", "aac"]),
+    pdf: new Set(["pdf"]),
+    text: new Set(["txt", "md", "json", "xml", "csv", "log", "yaml", "yml", "html", "css", "js", "ts", "go", "py", "java", "c", "cpp", "h", "hpp", "rs", "sh", "bat", "ps1", "ini", "conf"])
   };
 
   elements.currentAddress.textContent = qrText;
@@ -29,6 +41,16 @@
   elements.fileInput.addEventListener("change", () => uploadFiles(Array.from(elements.fileInput.files || [])));
   elements.folderInput.addEventListener("change", () => uploadFiles(Array.from(elements.folderInput.files || [])));
   elements.refreshButton.addEventListener("click", loadFiles);
+  elements.previewModal.addEventListener("click", (event) => {
+    if (event.target.closest("[data-preview-close]")) {
+      closePreview();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.previewModal.hidden) {
+      closePreview();
+    }
+  });
 
   ["dragenter", "dragover"].forEach((eventName) => {
     elements.dropZone.addEventListener(eventName, (event) => {
@@ -115,6 +137,16 @@
       const actions = document.createElement("div");
       actions.className = "file-actions";
 
+      const previewType = getPreviewType(item.path);
+      if (!item.isDir && previewType) {
+        const preview = document.createElement("button");
+        preview.className = "button small";
+        preview.type = "button";
+        preview.textContent = "预览";
+        preview.addEventListener("click", () => openPreview(item, previewType));
+        actions.appendChild(preview);
+      }
+
       const download = document.createElement("a");
       download.className = "button small primary";
       download.href = `/download?path=${encodeURIComponent(item.path)}`;
@@ -130,6 +162,77 @@
       row.append(main, actions);
       elements.fileList.appendChild(row);
     });
+  }
+
+  function getPreviewType(filePath) {
+    const ext = filePath.split(".").pop().toLowerCase();
+    for (const [type, extensions] of Object.entries(previewTypes)) {
+      if (extensions.has(ext)) {
+        return type;
+      }
+    }
+    return "";
+  }
+
+  function openPreview(item, type) {
+    const url = `/preview?path=${encodeURIComponent(item.path)}`;
+    elements.previewTitle.textContent = item.name || item.path;
+    elements.previewOpen.href = url;
+    elements.previewBody.innerHTML = "";
+
+    if (type === "image") {
+      const image = document.createElement("img");
+      image.className = "preview-media";
+      image.src = url;
+      image.alt = item.name || item.path;
+      elements.previewBody.appendChild(image);
+    } else if (type === "video") {
+      const video = document.createElement("video");
+      video.className = "preview-media";
+      video.src = url;
+      video.controls = true;
+      video.playsInline = true;
+      elements.previewBody.appendChild(video);
+    } else if (type === "audio") {
+      const audio = document.createElement("audio");
+      audio.className = "preview-audio";
+      audio.src = url;
+      audio.controls = true;
+      elements.previewBody.appendChild(audio);
+    } else if (type === "pdf") {
+      const frame = document.createElement("iframe");
+      frame.className = "preview-frame";
+      frame.src = url;
+      frame.title = item.name || item.path;
+      elements.previewBody.appendChild(frame);
+    } else {
+      const pre = document.createElement("pre");
+      pre.className = "preview-text";
+      pre.textContent = "正在加载文本...";
+      elements.previewBody.appendChild(pre);
+      fetch(url)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("预览失败");
+          }
+          return response.text();
+        })
+        .then((text) => {
+          pre.textContent = text;
+        })
+        .catch((error) => {
+          pre.textContent = error.message;
+        });
+    }
+
+    elements.previewModal.hidden = false;
+    document.body.classList.add("modal-open");
+  }
+
+  function closePreview() {
+    elements.previewModal.hidden = true;
+    elements.previewBody.innerHTML = "";
+    document.body.classList.remove("modal-open");
   }
 
   async function deletePath(path, isDir) {

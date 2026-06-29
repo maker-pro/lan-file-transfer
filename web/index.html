@@ -76,5 +76,19 @@
       <div id="emptyState" class="empty-state" hidden>uploads 目录还是空的</div>
     </section>
   </main>
+
+  <div class="preview-modal" id="previewModal" hidden>
+    <div class="preview-backdrop" data-preview-close></div>
+    <section class="preview-dialog" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <header class="preview-head">
+        <h2 id="previewTitle">文件预览</h2>
+        <div class="preview-actions">
+          <a class="button small" id="previewOpen" target="_blank" rel="noopener">新窗口打开</a>
+          <button class="button small" type="button" data-preview-close>关闭</button>
+        </div>
+      </header>
+      <div class="preview-body" id="previewBody"></div>
+    </section>
+  </div>
 </body>
 </html>
